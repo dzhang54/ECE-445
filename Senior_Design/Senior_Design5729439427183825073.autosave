@@ -1,0 +1,102 @@
+import controlP5.*; //import ControlP5 library
+import processing.serial.*;
+
+Serial port;
+
+ControlP5 cp5_main; //create ControlP5 object
+PFont font;
+Textarea schedule_area;
+Textfield schedule_input;
+void setup(){ //same as arduino program
+
+  size(800, 800);    //window size, (width, height)
+  
+  printArray(Serial.list());   //prints all available serial ports
+  printArray(PFont.list());
+  float[] schedule_arr = new float[100]; // Instantiate an array of size 100
+  for(int i = 0; i < 100; i++){
+    schedule_arr[i] = -1.1111;
+  }
+  printArray(schedule_arr);
+  
+  //port = new Serial(this, "COM3", 9600);  //i have connected arduino to com3, it would be different in linux and mac os
+  
+  // Creation of UI objects
+  
+  cp5_main = new ControlP5(this);
+  font = createFont("Times-Roman", 14);    // custom fonts for buttons and title
+  
+  
+  // Creating the main buttons that we need for
+  cp5_main.addButton("Save")    // Creation of save button
+    .setPosition(600, 50)  //x and y coordinates of upper left corner of button
+    .setSize(60, 40)      //(width, height)
+    .setFont(font)
+  ;   
+
+  cp5_main.addButton("Load") // Creation of Load button
+    .setPosition(600, 150)  //x and y coordinates of upper left corner of button
+    .setSize(60, 40)      //(width, height)
+    .setFont(font)
+  ;
+
+  cp5_main.addButton("Rotate") // Creation of Rotate button
+    .setPosition(600, 250)  //x and y coordinates of upper left corner of button
+    .setSize(60, 40)      //(width, height)
+    .setFont(font)
+  ;
+  
+  // Instantiate a text area to display the schedule on
+  schedule_area = cp5_main.addTextarea("Scheduled rotation")
+    .setPosition(50,100)
+    .setSize(300,600)
+    .setFont(createFont("arial",12))
+    .setLineHeight(14)
+    .setColor(color(128))
+    .setColorBackground(color(255,100))
+    .setColorForeground(color(255,100))
+    ;
+   
+    
+  schedule_area.setText("Currently empty, when you add rotations to schedule"
+                    + " it will show up here"
+                    );
+}
+
+void draw(){  //same as loop in arduino
+
+  background(255, 255, 255); // background color of window (r, g, b) or (0 to 255)
+  
+  //lets give title to our window
+  fill(0, 0, 0);               //text color (r, g, b)
+  textFont(font);
+  text("Human Turntable", 325, 30);  // ("text", x coordinate, y coordinat)
+}
+
+void add(){
+  
+}
+
+void red(){
+  //port.write('r');
+}
+
+void yellow(){
+  //port.write('y');
+}
+
+void blue(){
+  //port.write('b');
+}
+
+void alloff(){
+  //port.write('f');
+}
+
+void save(){
+  
+}
+
+void rotate(){
+  // There's 1600 points in one rotation of 360, so in order to find out  
+}
