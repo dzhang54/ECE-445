@@ -10,7 +10,7 @@ Textarea schedule_area; // Schedule area where we display the routine rotations 
 StringList schedule_list; // StringList where we store our routines
 String schedule_str; // String that we display in the schedule_area
 IntList schedule_norm; // IntList that has the normalized values of StringList
-String dir = "r";
+String dir = "r"; // Variablet to control direction for the turntable
 
 
 void setup(){ // Setup function, similar to one in Arduino
@@ -51,27 +51,32 @@ void setup(){ // Setup function, similar to one in Arduino
     .setFont(font)
     .setColorBackground(color(0,145,0));  
 
+  // Load button
   cp5_main.addButton("load")
     .setPosition(290, 150) // (x,y)
     .setSize(60, 40)
     .setFont(font);
 
+  // Rotate button
   cp5_main.addButton("rotate") 
     .setPosition(650, 200)  // (x,y)
     .setSize(60, 40)      
     .setFont(font);
 
+  // Add button
   cp5_main.addButton("add")
     .setPosition(650, 245) // (x,y)
     .setSize(60, 40)      
     .setFont(font);
 
+  // Clear button
   cp5_main.addButton("clear")
     .setPosition(50, 610) // (x,y)
     .setSize(60, 40)      
     .setFont(font)
     .setColorBackground(color(255,0,0));
 
+  // Running a schedule button
   cp5_main.addButton("run_schedule")
     .setPosition(400, 400) // (x,y)
     .setSize(200, 100)      
@@ -79,6 +84,7 @@ void setup(){ // Setup function, similar to one in Arduino
     .setColorBackground(color(0,0,255))
     .setCaptionLabel("Run Schedule");
   
+  // Toggle button
   cp5_main.addButton("toggle")
      .setPosition(600,25) // (x,y)
      .setSize(100,50)
@@ -86,6 +92,7 @@ void setup(){ // Setup function, similar to one in Arduino
      .setColorBackground(color(0,0,255))
      .setCaptionLabel("CCW");
   
+  // Select menu for the rotation units
   cp5_main.addScrollableList("rotation_type")
    .setPosition(400, 100) // (x,y)
    .setSize(100, 100)
@@ -93,7 +100,8 @@ void setup(){ // Setup function, similar to one in Arduino
    .setItemHeight(20)
    .addItems(rotation_type)
    .setType(ScrollableList.DROPDOWN);
-   
+  
+  // Select menu for the pause units
   cp5_main.addScrollableList("pause_type")
    .setPosition(510, 100) // (x,y)
    .setSize(100, 100)
@@ -112,6 +120,7 @@ void setup(){ // Setup function, similar to one in Arduino
     .setColorBackground(color(255,100))
     .setColorForeground(color(255,100));
   
+  // Rotational input field
   cp5_main.addTextfield("input")
     .setPosition(400,200) // (x,y)
     .setSize(200,40)
@@ -119,6 +128,7 @@ void setup(){ // Setup function, similar to one in Arduino
      .setFocus(true)
      .setColor(color(255,0,0));
    
+  // Schedule name field 
   cp5_main.addTextfield("schedule_name")
     .setPosition(50,100) // (x,y)
     .setSize(200,40)
@@ -126,7 +136,7 @@ void setup(){ // Setup function, similar to one in Arduino
     .setColor(color(255,0,0))
     .setCaptionLabel("Schedule Name");
    
-
+  // Label to remind users to set their units!
   cp5_main.addTextlabel("label")
     .setText("You forgot to set your UNITS")
     .setPosition(400,510) // (x,y)
@@ -144,6 +154,8 @@ void draw(){
   fill(0, 0, 0);              
   textFont(title_font);
   text("Human Turntable", 275, 50); 
+  
+  // Testing code to see what value we sent through Serial
   /*
   String val = port.readStringUntil('\n');
   if(val != null){
@@ -187,6 +199,12 @@ void add(){
   cp5_main.get(Textlabel.class, "label").setColor(color(169,169,169));
 }
 
+/*
+ * Description: Function that gets called when the save button is pressed. This button will save the schedule locally, with whatever name you have put in the input box.
+ * File is saved at wherever you ran this application from
+ * Return: void
+ * Params: N/A
+ */
 void save(){
   String[] schedule_arr = schedule_list.array();
   String file_name = get_input("schedule_name");
@@ -198,22 +216,41 @@ void save(){
   clearTextField("schedule_name");
 }
 
+/*
+ * Description: Function that gets called when the load button is pressed. It will read in the data from
+ * the file you named and load all its values into the schedule area.
+ * Return: void
+ * Params: N/A
+ */
 void load(){
+  // Loading the text from the save file
   String[] loaded_schedule = loadStrings(cp5_main.get(Textfield.class, "schedule_name").getText());
+  // Connecting everything with a newline char
   String schedule_string = join(loaded_schedule, "\n");
   int norm_to_add;
+  
+  // Clear all of our global lists to make room for the newly loaded schedule
   schedule_list.clear();
   schedule_norm.clear();
+  
+  // Creating data structure for the schedule
   for(int i = 0; i < loaded_schedule.length; i++){
     schedule_list.append(loaded_schedule[i]);
   }
+  
+  // 2-D array to allow us to get both the unit and the actual value
   String[][] temp = new String[loaded_schedule.length][2];
   
   for(int j = 0; j < loaded_schedule.length;j++){
     temp[j] = split(loaded_schedule[j]," ");
   }
+  
+  // Setting the units in the dropdown menu to same one as loaded schedule
   cp5_main.get(ScrollableList.class, "rotation_type").setLabel(temp[0][1]);
   cp5_main.get(ScrollableList.class, "pause_type").setLabel(temp[1][1]);
+  
+  // Load the units and actual values into our global data structures
+  // and convert everything to either ms or steps
   for(int k = 0; k < loaded_schedule.length; k++){
     int convert = int(temp[k][0]);
     String type = temp[k][1];
@@ -222,18 +259,21 @@ void load(){
     if(k % 2 == 0){
       norm_to_add = convert_to_steps(convert,type);
     }else{
-      //print(convert + "\n");
       norm_to_add = convert_to_ms(convert, type);
-      //print(norm_to_add);
     }
     schedule_norm.append(norm_to_add);
   }
-  print(schedule_norm);
   
   schedule_area.setText(schedule_string);
   clearTextField("schedule_name");
 }
 
+/*
+ * Description: Converts the schedule from a list of values to something that we can
+ * display in the schedule area.
+ * Return: String
+ * Params: StringList schedule
+ */
 String create_schedule_str(StringList schedule){
   int list_size = schedule.size();
   schedule_str = "";
@@ -244,19 +284,36 @@ String create_schedule_str(StringList schedule){
   return schedule_str;
 }
 
+/*
+ * Description: Function that gets called when the rotate button is pressed. Converts the values to steps
+ * and then writes that value through the serial port
+ * Return: void
+ * Params: N/A
+ */
 void rotate(){
   int temp = convert_to_steps(int(get_input("input")),cp5_main.get(ScrollableList.class, "rotation_type").getLabel());
   cp5_main.get(Textfield.class, "input").clear();
+  
+  // Arduino is expecting 4 bytes so if the rotation value isn't 4 bytes, we have to 0 extend it. 
   String test = nf(temp, 4);
-  print("Converted value: " + test + "\n");
   port.write(test);
+  // Testing code to see what value we sent through Serial
+  /*
   String val = port.readStringUntil('\n');
   if(val != null){
     println(val + "\n");
-  }
+  }*/
   
 }
 
+/*
+ * Description: Used to convert the degrees or radians into steps since thats what our motor uses.
+ There is some accuracy issues here as we have to truncate the decimal part of the function.
+ However, this shouldn't be as big of an issue if you increase the steps per rotation for the motor
+ * Return: int(steps) - integer version of the steps
+ * Params: input - the rotation value in the input field
+           type - radians/degrees
+ */
 int convert_to_steps(int input, String type){
  float steps = 0.0;
  if(type.equals("Radians")){
@@ -267,6 +324,12 @@ int convert_to_steps(int input, String type){
  return int(steps);
 }
 
+/*
+ * Description: Convert the pause into ms since that's what our delay function takes.  
+ * Return: delay - delay in ms instead of seconds or minutes
+ * Params: input - the rotation value in the input field
+           type - seconds/minutes
+ */
 int convert_to_ms(int pause, String type){
   int delay = 0;
   //print(type + "\n");
@@ -279,19 +342,27 @@ int convert_to_ms(int pause, String type){
   return delay;
 }
 
+/*
+ * Description: Funcition that gets called when the run schedule button is pressed.  
+ * Return: delay - delay in ms instead of seconds or minutes
+ * Params: input - the rotation value in the input field
+           type - seconds/minutes
+ */
 void run_schedule(){
   int[] schedule_arr = schedule_norm.array();
   String temp;
+  // Iterates through and writes either a rotation through the serial port or delays 
+  // for a little bit.
   for(int i = 0; i < schedule_arr.length; i++){
     temp = nf(schedule_arr[i],4);
     if(i % 2 == 0){
       port.write(temp);
     }else{
-      print(schedule_arr[i]);
       delay(schedule_arr[i]);
     }
   }
 }
+
 void clearTextField(String fieldname){
   cp5_main.get(Textfield.class, fieldname).clear();
 }
@@ -299,6 +370,13 @@ void clearTextField(String fieldname){
 String get_input(String fieldname){
    return cp5_main.get(Textfield.class, fieldname).getText(); 
 }
+
+/*
+ * Description: Function that gets called when we wish to switch the rotation direction.
+ * Sets the dir variable to l or r and we write the direction to the serial port
+ * Return: N/A
+ * Params: N/A
+ */
 void toggle(){
   if(dir.equals("r")){
     cp5_main.get(Button.class, "toggle").setLabel("CW");
@@ -309,6 +387,12 @@ void toggle(){
   }
   port.write(dir);
 }
+
+/*
+ * Description: Clear everything from our structures
+ * Return: N/A
+ * Params: N/A
+ */
 void clear(){
   schedule_area.setText("Your scheduled rotations and pauses have been cleared!");
   schedule_list.clear();
